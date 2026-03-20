@@ -1,0 +1,1 @@
+The Variant Specific Potential Points widget is a liquid snippet that can be added to PDPs via the 'add custom liquid' block. This creates a block that pulls in the merchant's CSS styling, and shows the correct number of potential points according to variant price.
