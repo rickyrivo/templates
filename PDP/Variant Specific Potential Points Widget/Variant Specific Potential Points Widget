@@ -1,0 +1,66 @@
+{% comment %} Rivo Potential Points - Variant Dynamic Block {% endcomment %}
+{% assign pp_config = shop.metafields.ba_loy.config.frontend.potential_points.order_placed %}
+{% if pp_config.enabled %}
+  <div id="rivo-earn-block" style="
+    background-color: rgb(var(--color-base-background-2, 248, 247, 243));
+    border: 1px solid rgb(var(--color-base-accent-1, 233, 230, 220));
+    border-radius: var(--inputs-radius, 8px);
+    padding: 14px 16px;
+    margin: 12px 0;
+    font-family: var(--font-body-family, sans-serif);
+    font-weight: var(--font-body-weight, 300);
+    color: rgb(var(--color-base-text, 102, 104, 104));
+    font-size: 14px;
+  ">
+    <p style="margin: 0; line-height: 1.5;">
+      Join now and get <strong><span id="rivo-earn-amount"></span></strong> back in store credit on this product.
+      {% unless customer %}
+        <a href="/account/login" style="color: rgb(var(--color-base-outline-button-labels, 170, 40, 38)); text-decoration: underline;">Log in</a>
+      {% endunless %}
+    </p>
+  </div>
+
+  <script>
+    (function() {
+      var config = {{ pp_config | json }};
+      if (!config || !config.enabled) return;
+
+      function calcPoints(price) {
+        var dollars = price / 100;
+        {% if customer %}
+          var tierName = {{ customer.metafields.custom.rivo.value.vip_tier | json }};
+          var tiers = config.multi_balance_settings_by_tiers || {};
+          var tier = tiers[tierName] || null;
+        {% else %}
+          var tier = null;
+        {% endif %}
+
+        if (config.points_type === 'multiplier') {
+          var base   = tier ? tier.currency_base_amount : config.currency_base_amount;
+          var amount = tier ? tier.balance_amount        : config.points_amount;
+          return Math.round(Math.round(dollars) / base) * amount;
+        }
+        return tier ? tier.balance_amount : config.points_amount;
+      }
+
+      function update(price) {
+        var el = document.getElementById('rivo-earn-amount');
+        if (!el) return;
+        el.textContent = calcPoints(price) + ' points';
+      }
+
+      update({{ product.selected_or_first_available_variant.price }});
+
+      document.addEventListener('variant:changed', function(e) {
+        if (e.detail && e.detail.variant) update(e.detail.variant.price);
+      });
+
+      document.addEventListener('change', function(e) {
+        if (!e.target || e.target.name !== 'id') return;
+        var variants = {{ product.variants | json }};
+        var v = variants.find(function(v) { return v.id == e.target.value; });
+        if (v) update(v.price);
+      });
+    })();
+  </script>
+{% endif %}
